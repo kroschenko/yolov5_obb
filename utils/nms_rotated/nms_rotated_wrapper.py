@@ -28,8 +28,9 @@ def obb_nms(dets, scores, iou_thr, device_id=None):
     if dets_th.numel() == 0: # len(dets)
         inds = dets_th.new_zeros(0, dtype=torch.int64)
     else:
+        device = 'cpu' if device_id is None else f'cuda:{device_id}'
         # same bug will happen when bboxes is too small
-        too_small = dets_th[:, [2, 3]].min(1)[0] < 0.001 # [n]
+        too_small = dets_th[:, [2, 3]].min(1)[0].to(device) < 0.001 # [n]
         if too_small.all(): # all the bboxes is too small
             inds = dets_th.new_zeros(0, dtype=torch.int64)
         else:
@@ -38,7 +39,7 @@ def obb_nms(dets, scores, iou_thr, device_id=None):
             dets_th = dets_th[~too_small] # (n_filter, 5)
             scores = scores[~too_small]
 
-            inds = nms_rotated_ext.nms_rotated(dets_th, scores, iou_thr)
+            inds = nms_rotated_ext.nms_rotated(dets_th, scores, iou_thr).to(device)
             inds = ori_inds[inds]
 
     if is_numpy:
